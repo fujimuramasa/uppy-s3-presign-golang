@@ -12,8 +12,9 @@ import (
 
 type RequestBody struct {
 
-    FileName string `json:"filename,omitempty"`
-    ContentType string `json:"contentType,omitempty"`
+    FileName *string `json:"filename,omitempty"`
+    ContentType *string `json:"contentType,omitempty"`
+    MetaData map[string]*string `json:"metaData,omitempty"`
 }
 
 func Sign(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +34,8 @@ func Sign(w http.ResponseWriter, r *http.Request) {
 
     req, _ := svc.PutObjectRequest(&s3.PutObjectInput{
         Bucket: aws.String("yuusha2021"),
-        Key: aws.String(body.FileName),
+        Key: body.FileName,
+        Metadata: body.MetaData,
     })
     url, err := req.Presign(15 * time.Minute)
 
@@ -41,10 +43,18 @@ func Sign(w http.ResponseWriter, r *http.Request) {
         http.Error(w, err.Error(), http.StatusBadRequest)
     }
 
+    headers := map[string]string{}
+    for k,v := range body.MetaData {
+        if v != nil {
+            headers["x-amz-meta-"+k] = aws.StringValue(v)
+        }
+    }
+
     ret := map[string]interface{}{
         "url": url,
         "method": "PUT",
         "fields": map[string]interface{}{},
+        "headers": headers,
     }
     byt, _ := json.Marshal(ret)
 

@@ -13,9 +13,14 @@
       var uppy = Uppy.Core()
         .use(Uppy.Dashboard, {
           inline: true,
-          target: '#drag-drop-area'
+          target: '#drag-drop-area',
+          metaFields: [
+            { id: 'name', name: 'Name', placeholder: 'file name' },
+            { id: 'caption', name: 'Caption', placeholder: 'describe what the image is about' },
+          ]
         })
         .use(Uppy.AwsS3, {
+            metaFields: ['name', 'caption'],
             getUploadParameters (file) {
                 return fetch('/sign', {
                     method: 'POST',
@@ -25,7 +30,8 @@
                     },
                     body: JSON.stringify({
                         filename: file.name,
-                        contentType: file.type
+                        contentType: file.type,
+                        metaData: file.meta
                     })
                 }).then((response) => {
                     return response.json()
